@@ -8,7 +8,7 @@ pygments: true
 # Themes are encouraged to use these universal variables
 # so be sure to set them if your theme uses them.
 #
-title : Josh Geller's Blog
+title : Josh's Blog
 tagline: On the travails of a college programmer
 author :
   name : Josh Geller
@@ -16,6 +16,8 @@ author :
   github : jgeller819
 #  twitter : username
 #  feedburner : feedname
+
+#markdown: rdiscount
 
 # The production_url is only used when full-domain names are needed
 # such as sitemap.txt
