@@ -215,8 +215,14 @@ var GraphView = Backbone.View.extend({
           .on("mousedown", function(d, i) {
             _this.mousedown(this);
           })
+          .on("touchstart", function(d, i) {
+            _this.touchdown(this);
+          })
           .on("mouseup", function(d, i) {
             _this.mouseup();
+          })
+          .on("touchup", function(d, i) {
+            this.touchup();
           });
         return this;
     },
@@ -238,9 +244,31 @@ var GraphView = Backbone.View.extend({
         d3.event.preventDefault();
     },
 
+    touchdown: function(context) {
+        _this = this;
+        e = d3.touches(context)[0];
+        x = this.reverse_x_scale(e[0]);
+        y = this.reverse_y_scale(e[1]);
+        if (this.model.touchBegan(x, y)) {
+            this.overlay.on("touchmove", function(d, i) {
+                d3.event.preventDefault();
+                e = d3.touches(this)[0];
+                x = _this.reverse_x_scale(e[0]);
+                y = _this.reverse_y_scale(e[1]);
+                _this.model.touchMoved(x, y);
+            });
+        }
+        d3.event.preventDefault();
+    },
+
     mouseup: function() {
         this.model.touchEnded();
         this.overlay.on("mousemove", null);
+    },
+
+    touchup: function() {
+        this.model.touchEnded();
+        this.overlay.on("touchmove", null);
     },
 
     updateXScale: function() {
