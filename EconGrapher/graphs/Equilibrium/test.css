@@ -13,3 +13,8 @@
     fill: none;
     pointer-events: all;
 }
+/*
+svg {
+    max-height: 100%;
+}
+*/

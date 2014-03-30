@@ -210,8 +210,9 @@ var EquilibriumGraph = Graph.extend({
     }
 
  });
-
-view = new GraphView({
-    model: new EquilibriumGraph()
-});
-view.render();
+$(document).ready(function() {
+    view = new GraphView({
+        model: new EquilibriumGraph()
+    });
+    view.render();
+    });

@@ -163,7 +163,7 @@ var Graph = Backbone.Model.extend({
 });
 
 var GraphView = Backbone.View.extend({
-    el: "#chart1",
+    el: "#containerView",
     model: new Graph(),
     _lines: {},
     _points: {},
@@ -187,7 +187,9 @@ var GraphView = Backbone.View.extend({
     render: function() {
         var margin = this.options.margin;
         this.width = this.$el.width() - margin.left - margin.right;
+//        this.height = $("#containerView").height() - margin.top - margin.bottom;
         this.height = this.$el.height() - margin.top - margin.bottom;
+
 
         this.svg = d3.select(this.el).append("svg")
               .attr("width", this.width + margin.left + margin.right)
