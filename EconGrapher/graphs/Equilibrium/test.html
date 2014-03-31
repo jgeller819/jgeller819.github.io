@@ -30,12 +30,11 @@
     -->
       <link rel="stylesheet" href="../../css/graph.css">
 
-      <link rel="stylesheet" type="text/css" hrf="../../js/jqplot/jquery.jqplot.min.css">
-      <script type="text/javascript" src="../../js/jquery-1.8.2.min.js"></script>
+      <script type="text/javascript" src="../../js/jquery-1.11.0.min.js"></script>
       <script type="text/javascript" src="../../js/jquery.hammer.min.js"></script>
       <script type="text/javascript" src="../../js/underscore.js"></script>
       <script type="text/javascript" src="../../js/backbone.js"></script>
-      <script type="text/javascript" src="../../js/models.js"></script>
+<!--      <script type="text/javascript" src="../../js/models.js"></script>-->
 
       <!-- Color Picker -->
       <link rel="stylesheet" href="../../css/spectrum.css">
@@ -116,7 +115,7 @@
                       <a href="#"><i class="icon-check icon-2x"></i></a>
                       <a href="#"><i class="icon-folder-open-alt icon-2x"></i></a>
                     -->
-                    <a href="javascript:void(0)" id="reset"><i class="icon-refresh icon-2x"></i></a>
+                    <a href="javascript:void(0)" id="reset"><i class="icon-refresh icon-2x reset"></i></a>
                       <!-- Neither are these
                       <a class="fancybox" href="#settings"><i class="icon-gear icon-2x"></i></a>
                     -->
@@ -151,13 +150,13 @@
                         <span style="font-weight:800;font-size:14pt;">=&nbsp; </span>
                       </div>
                       <div class="span2" style="margin:0px;padding:0px">
-                        <input type="number"  class="param" value="200" min="0" name="d_int_inv" style="margin:0px;padding:0px;"/>
+                        <input type="number"  class="param" value="100" min="0" name="d_int_inv" style="margin:0px;padding:0px;"/>
                       </div>
                       <div class="span1" style="margin:0px;padding:0px;">
                         <p style="text-align: center; line-height:1;margin:0px;padding:0px;font-size:16pt; font-weight:800;">&#8722;</p>
                       </div>
                       <div class="span1" style="margin:0px;padding:0px;">
-                        <input type="number"  class="param" value="2" min="0" name="d_slope_inv" style="margin:0px;padding:0px;"/></div>
+                        <input type="number"  class="param" value="1" min="0" name="d_slope_inv" style="margin:0px;padding:0px;"/></div>
                         <div class="span1" style="margin:0px;padding:0px;">
                           <p style="line-height:1; padding-left:7px; margin:0px;font-size:13pt;font-weight:700;">P</p></div>
                           <div class="span1">
@@ -185,7 +184,7 @@
                             <div class="span1" style="margin:0px;padding:0px;">
                               <p style="text-align: center; line-height: 1;margin:0px;padding:0px;font-size:16pt;font-weight:800;">&#43;</p></div>
                               <div class="span1" style="margin:0px;padding:0px;">
-                                <input type="number" class="param" value="2" min="0" name="s_slope_inv" style="margin:0px;padding:0px;"/></div>
+                                <input type="number" class="param" value="1" min="0" name="s_slope_inv" style="margin:0px;padding:0px;"/></div>
                                 <div class="span1" style="margin:0px;padding:0px;"><p style="line-height: 1; padding-left:7px;margin:0px;font-size:13pt;font-weight:700;">P</p></div>
                                 <div class="span1">
                                   <button type="button" class="btn shiftButton" name="shift_supply">Add Shift</button>
@@ -247,7 +246,7 @@
                                       <div class="row-fluid">
                                         <div class="row-fluid">
                                           <div class="span6"><p>X-Axis Size =</p></div>
-                                          <div class="span6"><input class="param" type="number" name="maxXValue" value="200"/></div>
+                                          <div class="span6"><input class="param" type="number" name="maxXValue" value="100"/></div>
                                         </div>
                                         <div class="row-fluid">
                                           <div class="span6"><p>Y-Axis Size =</p></div>
@@ -288,25 +287,33 @@
                                                 <input name="supply_fill_color">
                                               </div>
                                               <div class="span6" style="padding:0px;margin0px;"><p>Producer Surplus =</p></div>
-                                              <div class="span4"><input name="producer_surplus" type="text" value="2500" disabled="disabled"/></div>
+                                              <div class="span4"><input name="producer_surplus" type="text" value="1250" disabled="disabled"/></div>
                                             </div>
                                             <div class="row-fluid">
                                               <div class="span1" style="margin:3px;">
                                                 <input name="demand_fill_color">
                                               </div>
                                               <div class="span6" style="padding:0px;margin0px;"><p>Consumer Surplus =</p></div>
-                                              <div class="span4"><input name="consumer_surplus" type="text" value="2500" disabled="disabled"/></div>
+                                              <div class="span4"><input name="consumer_surplus" type="text" value="1250" disabled="disabled"/></div>
                                             </div>
                                             <div class="row-fluid">
                                               <div class="span6"><p>Surplus Labels</p></div>
                                               <div class="span6">
+                                                <div class="toggle">
+                                                  <label class="toggle-radio" for="label2">ON</label>
+                                                  <input type="radio" class="param" name="labelRadio" id="label1" value="on" checked="checked">
 
+                                                  <label class="toggle-radio" for="label1">OFF</label>
+                                                  <input type="radio" class="param" name="labelRadio" id="label2" value="off">
+                                                </div>
+<!--
                                                 <div class="btn-group" data-toggle="buttons-radio" data-toggle-name="radio_group">
                                                   <button class="param btn"  name="fill_label_switch" type="button" value="Off"> Off </button>
                                                   <button class="param btn active"  name="fill_label_switch" type="button" value="Area"> Area </button>
                                                   <button class="param btn"  name="fill_label_switch" type="button" value="Label" checked> Label </button>
                                                 </div>
                                                 <input type="hidden" name="checkbox_group" value="Area"/>
+                                              -->
                                               </div>
                                             </div>
                                           </div>
@@ -337,6 +344,7 @@
                                     <div id="collapse-options" class="accordion-body collapse in">
                                       <div class="accordion-inner">
                                         <div class="row-fluid">
+                                          <!--
                                           <div class="row-fluid">
                                             <div class="span6"></div>
                                             <div class="span6">
@@ -360,13 +368,14 @@
                                           </div>
 
                                           <input type="hidden" name="checkbox_group" value="off"/>
+-->
                                         </div>
 
                                         <div class="row-fluid">
                                           <div class="span12">
-                                            <button class="btn" name="reset">Reset</button>
+                                            <button class="btn reset" name="reset">Reset</button>
                                           </div>
-                                        </div><!--row -->
+                                        </div><!--row-->
 
                                       </div>
                                     </div><!--row -->

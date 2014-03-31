@@ -18,7 +18,7 @@ updateParametersFromGraph = function() {
   for (var i = 0; i < yNames.length; i++) {
     $("input[name=" + yNames[i] + "]").val(roundedString(params[yNames[i]], params["maxYValue"]));
   }
-  for (var i = 0; i < xNames.length; i++) {
+  for (i = 0; i < xNames.length; i++) {
     $("input[name=" + xNames[i] + "]").val(roundedString(params[xNames[i]], params["maxXValue"]));
   }
   var prodSurplus = graph.get("surpluses")[1];

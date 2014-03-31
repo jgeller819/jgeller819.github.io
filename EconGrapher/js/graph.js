@@ -4,7 +4,7 @@ var Line = Backbone.Model.extend({
         return {
             "points": [],
             "lineColor": '#000000',
-            "lineThickness": 1,
+            "lineThickness": 2,
             "lineStyle": null, /* input any stroke-dasharray pattern */
             "showLine": true,
             "xIntercepts": [],
@@ -27,15 +27,35 @@ var LineCollection = Backbone.Collection.extend({
     model: Line
 });
 
+var Label = Backbone.Model.extend({
+    defaults: function() {
+        return {
+            text: "",
+            visible: true,
+            color: "black",
+            position: {}
+        };
+    }
+});
+
+var LabelCollection = Backbone.Collection.extend({
+    model: Label
+});
+
 var Point = Backbone.Model.extend({
     defaults: function() {
         return {
             "point": {},
+            "color": "black",
+            "radius": 4,
             "visible": false,
         };
     }
 });
 
+var PointCollection = Backbone.Collection.extend({
+    model: Point
+});
 
 var Axis = Backbone.Model.extend({
     defaults: function() {
@@ -43,23 +63,31 @@ var Axis = Backbone.Model.extend({
             "xAxis": true,
             "label": "",
             "ticks": [],
-            "tickFormatFunction": null,
             "min": 0,
             "max": 100,
+            tickFormatFunction: function(d) {
+                if (d == params.minXValue || d == params.maxXValue) {
+                    return "" + d;
+                }
+                else {
+                    return params.x_intercept_label + roundedString(d, params.maxXValue);
+                }
+            },
+            textAnchorFunction: function(d, context) {
+                return (d == context.get("min") || d == context.get("max")) ? "end" : "middle";
+            },
+            dYFunction: function(d, context) {
+                return (d == context.get("min") || d == context.get("max")) ? ".32em" : "-1em";
+            },
+            transformFunction: function(d, context) {
+                return (d == context.get("min") || d == context.get("max")) ? "rotate(0)" : "rotate(270)";
+            }
         };
     },
+});
 
-    textAnchorFunction: function(d) {
-        return (d == this.get("min") || d == this.get("max")) ? "end" : "middle";
-    },
-
-    dYFunction: function(d) {
-        return (d == this.get("min") || d == this.get("max")) ? ".32em" : "-1em";
-    },
-
-    transformFunction: function(d) {
-        return (d == this.get("min") || d == this.get("max")) ? "rotate(0)" : "rotate(270)";
-    }
+var AxisCollection = Backbone.Collection.extend({
+    model: Axis
 });
 
 var ShadedArea = Backbone.Model.extend({
@@ -88,9 +116,10 @@ var Graph = Backbone.Model.extend({
         return {
             /* Set all default values here - namely parameters and axes */
             "lines": new LineCollection(),
-            "points": {},
-            "shadedAreas": {},
-            "_axes": {},
+            "points": new PointCollection(),
+            "shadedAreas": new ShadedAreaCollection(),
+            "labels": new LabelCollection(),
+            "_axes": new AxisCollection(),
             "name": "",
             "minXValue": 0,
             "maxXValue": 100,
@@ -117,14 +146,6 @@ var Graph = Backbone.Model.extend({
             xAxis: true,
             label: params.x_label,
             ticks: [params.minXValue, params.maxXValue],
-            tickFormatFunction: function(d) {
-                if (d == params.minXValue || d == params.maxXValue) {
-                    return "" + d;
-                }
-                else {
-                    return x_int_string + roundedString(d, params.maxXValue);
-                }
-            },
             min: params.minXValue,
             max: params.maxXValue
         });
@@ -133,14 +154,6 @@ var Graph = Backbone.Model.extend({
             xAxis: false,
             label: params.y_label,
             ticks: [params.minYValue, params.maxYValue],
-            tickFormatFunction: function(d) {
-                if (d == params.minYValue || d == params.maxYValue) {
-                    return "" + d;
-                }
-                else {
-                    return x_int_string + roundedString(d, params.maxYValue);
-                }
-            },
             min: params.minYValue,
             max: params.maxYValue
         });
@@ -169,6 +182,10 @@ var GraphView = Backbone.View.extend({
     _points: {},
     _shadedAreas: {},
     _shadedAreaFormats: {},
+    _axes: {},
+    _axisFormats: {},
+    _axisLabels: {},
+    _labels: {},
 
     options: {
         margin: {top: 10, right: 10, bottom: 35, left: 35}
@@ -181,6 +198,24 @@ var GraphView = Backbone.View.extend({
         }, this);
         this.model.get("shadedAreas").on("change", function(area) {
             this.drawShadedArea(area);
+        }, this);
+        this.model.get("_axes").on("change", function(axis) {
+            if (axis.get("xAxis")) {
+                this.updateXScale();
+            }
+            else {
+                this.updateYScale();
+            }
+            this.drawAxis(axis, null, null);
+            this.drawShadedAreas();
+            this.drawLines();
+            this.drawPoints();
+        }, this);
+        this.model.get("points").on("change", function(point) {
+            this.drawPoint(point);
+        }, this);
+        this.model.get("labels").on("change", function(label) {
+            this.drawLabel(label);
         }, this);
     },
 
@@ -200,12 +235,14 @@ var GraphView = Backbone.View.extend({
         this.lineFormat = d3.svg.line()
           .interpolate("linear");
 
-        this.updateXScale();
-        this.updateYScale();
+        this.initializeXScale();
+        this.initializeYScale();
 
         this.renderShadedAreas();
         this.renderLines();
         this.renderAxes();
+        this.renderPoints();
+        this.renderLabels();
 
         _this = this;
 
@@ -227,6 +264,20 @@ var GraphView = Backbone.View.extend({
             this.touchup();
           });
         return this;
+    },
+
+    resize: function() {
+        var margin = this.options.margin;
+        this.width = this.$el.width() - margin.left - margin.right;
+        this.height = this.$el.height() - margin.top - margin.bottom;
+
+        this.svg.attr("width", this.width + margin.left + margin.right)
+              .attr("height", this.height + margin.top + margin.bottom);
+
+        this.resizeAxes();
+
+        this.overlay.attr("width", this.width)
+          .attr("height", this.height);
     },
 
     mousedown: function(context) {
@@ -273,6 +324,24 @@ var GraphView = Backbone.View.extend({
         this.overlay.on("touchmove", null);
     },
 
+    initializeXScale: function() {
+        params = this.model.get("parameters");
+
+        this.x_scale = d3.scale.linear()
+          .range([0, this.width])
+          .domain([params.minXValue, params.maxXValue]);
+
+        this.reverse_x_scale = d3.scale.linear()
+          .range([params.minXValue, params.maxXValue])
+          .domain([0, this.width]);
+
+        this.lineFormat.x(function(d) {
+            return this.x_scale(d.x);
+        });
+
+        this.updateXAreas();
+    },
+
     updateXScale: function() {
         params = this.model.get("parameters");
 
@@ -284,15 +353,30 @@ var GraphView = Backbone.View.extend({
           .range([params.minXValue, params.maxXValue])
           .domain([0, this.width]);
 
-        this.xAxisFormat = d3.svg.axis()
-          .scale(this.x_scale)
-          .orient("bottom");
+        this.drawAxis(this.model.get("_axes").get("xAxis"), this.x_scale, null);
 
         this.lineFormat.x(function(d) {
             return this.x_scale(d.x);
         });
 
         this.updateXAreas();
+    },
+
+    initializeYScale: function() {
+        params = this.model.get("parameters");
+        this.y_scale = d3.scale.linear()
+          .range([this.height, 0])
+          .domain([params["minYValue"], params["maxYValue"]]);
+
+        this.reverse_y_scale = d3.scale.linear()
+          .range([params["minYValue"], params["maxYValue"]])
+          .domain([this.height, 0]);
+
+        this.lineFormat.y(function(d) {
+            return this.y_scale(d.y);
+        });
+
+        this.updateYAreas();
     },
 
     updateYScale: function() {
@@ -305,9 +389,7 @@ var GraphView = Backbone.View.extend({
           .range([params["minYValue"], params["maxYValue"]])
           .domain([this.height, 0]);
 
-        this.yAxisFormat = d3.svg.axis()
-          .scale(this.y_scale)
-          .orient("left");
+        this.drawAxis(this.model.get("_axes").get("yAxis"), this.y_scale, null);
 
         this.lineFormat.y(function(d) {
             return this.y_scale(d.y);
@@ -356,10 +438,16 @@ var GraphView = Backbone.View.extend({
         this._lines[line.id] = path;
     },
 
+    drawLines: function() {
+        this.model.get("lines").each(function(line) {
+            this.drawLine(line.id);
+        }, this);
+    },
+
     drawLine: function(line) {
         path = this._lines[line];
         lineModel = this.model.get("lines").get(line);
-        path.attr("visible", lineModel.get("active"))
+        path.attr("visibility", lineModel.get("active") ? "visible" : "hidden")
           .style({
             "stroke": lineModel.get("lineColor"),
             "stroke-dasharray": lineModel.get("lineStyle"),
@@ -369,45 +457,99 @@ var GraphView = Backbone.View.extend({
     },
 
     renderAxes: function() {
-        this.x_axis = this.svg.append("g")
-          .attr("class", "axis")
-          .attr("transform", "translate(0," + this.height + ")");
+        xAxis = this.model.get("_axes").get("xAxis");
+        yAxis = this.model.get("_axes").get("yAxis");
 
-        this.x_axis_label = this.svg.append("text")
-          .attr("x", this.width / 2)
-          .attr("y", this.height + 30);
+        this.renderAxis(xAxis);
+        this.renderAxis(yAxis);
 
-        this.y_axis = this.svg.append("g")
+        this.drawAxis(xAxis, this.x_scale, "bottom");
+        this.drawAxis(yAxis, this.y_scale, "left");
+
+    },
+
+    renderAxis: function(axis) {
+        var el = this.svg.append("g")
           .attr("class", "axis");
+        var format = d3.svg.axis();
+        var label = this.svg.append("text");
 
-        this.y_axis_label = this.svg.append("text")
-          .attr("x", 0 - 30)
-          .attr("y", this.height / 2);
+        if (axis.get("xAxis")) {
+            el.attr("transform", "translate(0," + this.height + ")");
+            label.attr("x", this.width / 2)
+              .attr("y", this.height + 30)
+              .style({
+                "text-anchor": "middle"
+              });
+        }
+        else {
+            label.attr("x", -this.height / 2)
+              .attr("y", -25)
+              .style({
+                "text-anchor": "middle"
+              })
+              .attr("transform", function (d, i) {
+                return "rotate(270)";
+              });
+        }
 
-        this.updateXAxis();
-        this.updateYAxis();
+        this._axes[axis.id] = el;
+        this._axisFormats[axis.id] = format;
+        this._axisLabels[axis.id] = label;
     },
 
-    updateXAxis: function() {
-        axis = this.model.get("_axes")["xAxis"];
+    resizeAxes: function() {
+        xAxis = this.model.get("_axes").get("xAxis");
+        yAxis = this.model.get("_axes").get("yAxis");
 
-        this.xAxisFormat.tickValues(axis.get("ticks"))
-          .tickFormat(axis.get("tickFormatFunction"));
-
-        this.x_axis.call(this.xAxisFormat);
-
-        this.x_axis_label.text(axis.get("label"));
+        this.resizeAxis(xAxis);
+        this.resizeAxis(yAxis);
     },
 
-    updateYAxis: function() {
-        axis = this.model.get("_axes")["yAxis"];
+    resizeAxis: function(axis) {
+        el = this._axes[axis.id];
+        label = this._axisLabels[axis.id];
+        if (axis.get("xAxis")) {
+            el.attr("transform", "translate(0," + this.height + ")");
+            label.attr("x", this.width / 2)
+              .attr("y", this.height + 30);
+        }
+        else {
+            label.attr("x", 0 - 30)
+              .attr("y", this.height / 2);
+        }
+    },
 
-        this.yAxisFormat.tickValues(axis.get("ticks"))
-          .tickFormat(axis.get("tickFormatFunction"));
+    drawAxis: function(axis, scale, orientation) {
+        _this = this;
+        format = this._axisFormats[axis.id];
+        el = this._axes[axis.id];
+        label = this._axisLabels[axis.id];
 
-        this.y_axis.call(this.yAxisFormat);
+        if (scale) {
+            format.scale(scale);
+        }
+        if (orientation) {
+            format.orient(orientation);
+        }
 
-        this.y_axis_label.text(axis.get("label"));
+        format.tickValues(axis.get("ticks"))
+          .tickFormat(function(d) {
+            return axis.get("tickFormatFunction")(d, _this.model.get("parameters"));
+        });
+        el.call(format)
+          .selectAll("text")
+          .style("text-anchor", function(d, i) {
+            return axis.get("textAnchorFunction")(d, axis);
+          })
+          .attr("dy", function(d, i) {
+            return axis.get("dYFunction")(d, axis);
+          })
+          .attr("transform", function(d, i) {
+            return axis.get("transformFunction")(d, axis);
+          });
+
+        label.text(axis.get("label"));
     },
 
     renderShadedAreas: function() {
@@ -431,6 +573,12 @@ var GraphView = Backbone.View.extend({
         this._shadedAreas[shadedArea.id] = area;
     },
 
+    drawShadedAreas: function() {
+        this.model.get("shadedAreas").each(function(area) {
+            this.drawShadedArea(area);
+        }, this);
+    },
+
     drawShadedArea: function(shadedArea) {
         areaFormat = this._shadedAreaFormats[shadedArea.id];
         area = this._shadedAreas[shadedArea.id]
@@ -440,28 +588,75 @@ var GraphView = Backbone.View.extend({
           })
           .datum(shadedArea.get("data"))
           .attr("d", areaFormat);
+    },
+
+    renderPoints: function() {
+        this.model.get("points").each(function(point) {
+            this.renderPoint(point);
+            this.drawPoint(point);
+        }, this);
+    },
+
+    renderPoint: function(point) {
+        var el = this.svg.append("circle");
+        this._points[point.id] = el;
+    },
+
+    drawPoints: function() {
+        this.model.get("points").each(function(point) {
+            this.drawPoint(point);
+        }, this);
+    },
+
+    drawPoint: function(point) {
+        p = point.get("point");
+        el = this._points[point.id]
+          .style({
+            fill: point.get("color")
+          })
+          .attr("r", point.get("radius"))
+          .attr("cx", this.x_scale(p.x))
+          .attr("cy", this.y_scale(p.y))
+          .attr("visibility", point.get("visible") ? "visible" : "hidden");
+    },
+
+    renderLabels: function() {
+        this.model.get("labels").each(function(label) {
+            this.renderLabel(label);
+            this.drawLabel(label);
+        }, this);
+    },
+
+    renderLabel: function(label) {
+        this._labels[label.id] = this.svg.append("text");
+    },
+
+    drawLabel: function(label) {
+        pos = label.get("position");
+        el = this._labels[label.id]
+          .attr("x", this.x_scale(pos.x))
+          .attr("y", this.y_scale(pos.y))
+          .attr("visibility", label.get("visible") ? "visible": "hidden")
+          .style({
+            fill: label.get("color")
+          })
+          .text(label.get("text"));
     }
-/**
-var ShadedArea = Backbone.Model.extend({
+});
+
+/*
+var Label = Backbone.Model.extend({
     defaults: function() {
         return {
-            "data": [],
-            "y0_function": null,
-            "y1_function": null,
-            "area_element": null,
-            "shade_on": true,
-            "shade_color": "black",
-            "label": "",
-            "label_position": {},
-            "label_on": true,
-            "label_element": null
+            text: "",
+            visible: true,
+            color: "black",
+            position: {}
         };
     }
 });
-*/
-});
 
-
+ */
 
 convertToOptionsHash = function(graph) {
     var params = graph.get("parameters");

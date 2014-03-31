@@ -271,13 +271,13 @@ function drawIntercepts() {
         yAxis.tickValues([Y_MIN, y_int, Y_MAX]);
         y_axis.call(yAxis)
         .selectAll("text")
-        .style("text-anchor", function(d) {
+        .style("text-anchor", function(d, ctx) {
             return (d == Y_MIN || d == Y_MAX) ? "end" : "middle";
         })
-        .attr("dy", function(d) {
+        .attr("dy", function(d, ctx) {
             return (d == Y_MIN || d == Y_MAX) ? ".32em" : "-1em";
         })
-        .attr("transform", function(d) {
+        .attr("transform", function(d, ctx) {
             return (d == Y_MIN || d == Y_MAX) ? "rotate(0)" : "rotate(270)";
         });
 
