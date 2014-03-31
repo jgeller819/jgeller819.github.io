@@ -3,6 +3,7 @@ var EquilibriumGraph = Graph.extend({
         this.initializeLinesAndAreas();
         this.initializeAxes();
         this.updateLabels();
+        this.updateSurplus();
     },
 
     defaults: function() {
@@ -91,6 +92,7 @@ var EquilibriumGraph = Graph.extend({
                 context.updateYAxis();
                 context.initializeLinesAndAreas();
                 context.updateLabels();
+                context.updateSurplus();
             }
         };
     },
@@ -148,6 +150,7 @@ var EquilibriumGraph = Graph.extend({
         this.updateYAxis();
         this.initializeLinesAndAreas();
         this.updateLabels();
+        this.updateSurplus();
         this.set("dirty", true);
     },
 
@@ -318,6 +321,38 @@ var EquilibriumGraph = Graph.extend({
             id: "psLabel"
         });
 
+        demand_points = this.get("demand_points");
+        supply_points = this.get("supply_points");
+        params = this.get("parameters");
+        labels = this.get("labels");
+        csLabel = labels.get("csLabel") || new Label({
+            id: "csLabel"
+        });
+        psLabel = labels.get("psLabel") || new Label({
+            id: "psLabel"
+        });
+        csLabel.set({
+            visible: false
+        });
+        psLabel.set({
+            visible: false
+        });
+
+        this.get("labels").set([demandLabel, supplyLabel, csLabel, psLabel], {remove: false});
+    },
+
+    updateSurplus: function() {
+        demand_points = this.get("demand_points");
+        supply_points = this.get("supply_points");
+        params = this.get("parameters");
+        labels = this.get("labels");
+        csLabel = labels.get("csLabel") || new Label({
+            id: "csLabel"
+        });
+        psLabel = labels.get("psLabel") || new Label({
+            id: "psLabel"
+        });
+
         if (x_int >= params.minXValue && y_int >= params.minYValue) {
             consumerSurplus = 0.5 * (x_int - params.minXValue) * (params.d_int - y_int);
             producerSurplus = 0.5 * (x_int - params.minXValue) * (y_int - params.s_int);
@@ -371,7 +406,7 @@ var EquilibriumGraph = Graph.extend({
             });
         }
 
-        this.get("labels").set([demandLabel, supplyLabel, csLabel, psLabel], {remove: false});
+        this.get("labels").set([csLabel, psLabel], {remove: false});
     },
 
     updateXAxis: function() {
@@ -518,6 +553,8 @@ var EquilibriumGraph = Graph.extend({
         line = this.get("lines").get(this.get("touched_line"));
         line.set('lineThickness', 2);
         this.set("touched_line", null);
+        this.updateSurplus();
+        this.set("dirty", true);
     }
 
  });
