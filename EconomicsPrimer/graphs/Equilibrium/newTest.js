@@ -651,9 +651,9 @@ $(document).ready(function() {
 
     updateParamsFromGraph = function() {
         params = model.get("parameters");
-        $("input[name=d_int_inv").val(roundedString(params.d_int_inv, params.maxYValue));
-        $("input[name=s_int_inv").val(roundedString(params.s_int_inv, params.maxYValue));
-        $("input[name=consumer_surplus").val(model.get("consumer_surplus_value").toFixed(1));
-        $("input[name=producer_surplus").val(model.get("producer_surplus_value").toFixed(1));
+        $("input[name=d_int_inv]").val(roundedString(params.d_int_inv, params.maxYValue));
+        $("input[name=s_int_inv]").val(roundedString(params.s_int_inv, params.maxYValue));
+        $("input[name=consumer_surplus]").val(model.get("consumer_surplus_value").toFixed(1));
+        $("input[name=producer_surplus]").val(model.get("producer_surplus_value").toFixed(1));
     };
 });
